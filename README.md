@@ -1,1 +1,1 @@
-Classification of Urban Sound using CNN. dataset: UrbanSound8K
+Classification of Urban Sound using CNN and transformer. dataset: UrbanSound8K

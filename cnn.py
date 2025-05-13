@@ -84,6 +84,8 @@ def train_model():
     csv_path = "/root/sound_datasets/urbansound8k/metadata/UrbanSound8K.csv"
     data_dir = "/root/sound_datasets/urbansound8k/audio"
     fold = 1
+    
+    epochs = 20
 
     dataset = UrbanSoundDataset(csv_path=csv_path, data_dir=data_dir, fold=fold)
     train_size = int(0.8 * len(dataset))
@@ -100,7 +102,7 @@ def train_model():
     optimizer = Adam(model.parameters(), lr=0.001)
     criterion = nn.CrossEntropyLoss()
 
-    for epoch in range(10):
+    for epoch in range(epochs):
         model.train()
         total_loss = 0
         for inputs, targets in tqdm(train_loader, desc=f"Epoch {epoch+1}"):

@@ -99,6 +99,7 @@ val_size = len(dataset) - train_size
 train_data, val_data = torch.utils.data.random_split(dataset, [train_size, val_size])
 
 batch_size=16
+epochs = 20
 
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_data, batch_size=batch_size)
@@ -123,7 +124,7 @@ model.to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 criterion = nn.CrossEntropyLoss()
 
-for epoch in range(20):
+for epoch in range(epochs):
     model.train()
     total_loss, total_correct = 0, 0
 

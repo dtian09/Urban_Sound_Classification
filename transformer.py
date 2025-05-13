@@ -83,8 +83,8 @@ def compute_global_mean_std(dataset):
     std = all_specs.std(axis=0) + 1e-6            # (n_mels,)
     return mean, std
 
-'''
-train_dataset = UrbanSoundDataset(
+
+dataset = UrbanSoundDataset(
     csv_path = "/root/sound_datasets/urbansound8k/metadata/UrbanSound8K.csv",
     data_dir = "/root/sound_datasets/urbansound8k/audio",
     fold=1,  # change for each fold
@@ -94,25 +94,14 @@ train_dataset = UrbanSoundDataset(
     n_mels=64
 )
 
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-'''
-csv_path = "/root/sound_datasets/urbansound8k/metadata/UrbanSound8K.csv"
-data_dir = "/root/sound_datasets/urbansound8k/audio"
+train_size = int(0.8 * len(dataset))
+val_size = len(dataset) - train_size
+train_data, val_data = torch.utils.data.random_split(dataset, [train_size, val_size])
 
-# Step 1: Load dataset without normalization
-raw_dataset = UrbanSoundDataset(csv_path, data_dir, fold=1)
-mean, std = compute_global_mean_std(raw_dataset)
+batch_size=16
 
-# Convert to tensors
-mean_tensor = torch.tensor(mean, dtype=torch.float32)
-std_tensor = torch.tensor(std, dtype=torch.float32)
-
-# Step 2: Load normalized dataset
-normalized_dataset = UrbanSoundDataset(
-    csv_path, data_dir, fold=1, mean=mean_tensor, std=std_tensor
-)
-
-train_loader = DataLoader(normalized_dataset, batch_size=16, shuffle=True)
+train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_data, batch_size=batch_size)
 
 _, _, time = next(iter(train_loader))[0].squeeze(1).shape
 
@@ -155,3 +144,21 @@ for epoch in range(20):
 
     acc = total_correct / len(train_loader.dataset)
     print(f"Epoch {epoch+1}: Loss={total_loss:.2f}, Acc={acc:.4f}")
+
+    # Validation accuracy
+    model.eval()
+    correct, total = 0, 0
+    with torch.no_grad():
+        for batch in val_loader:
+            #inputs, targets = inputs.to(device), targets.to(device)
+            inputs, targets = batch
+            inputs = inputs.squeeze(1).transpose(1, 2).to(device)  # shape: (B, T, F)
+            targets = targets.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+
+    accuracy = correct / total
+    print(f"Validation Accuracy: {accuracy:.4f}")
+

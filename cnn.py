@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 # Dataset class
 class UrbanSoundDataset(Dataset):
-    def __init__(self, csv_path, data_dir, fold, transform=None, sr=22050, duration=4, n_mels=64, mean=None, std=None):
+    def __init__(self, csv_path, data_dir, fold, transform=None, sr=22050, duration=4, n_mels=64):
         self.metadata = pd.read_csv(csv_path)
         self.metadata = self.metadata[self.metadata['fold'] == fold]
         self.data_dir = data_dir
@@ -20,8 +20,6 @@ class UrbanSoundDataset(Dataset):
         self.sr = sr
         self.target_len = sr * duration
         self.n_mels = n_mels
-        self.mean = mean
-        self.std = std
 
     def pad_or_truncate_waveform(self, y):#make sure each clip is 4 seconds (pad short clips to 4 s or truncate longer ones to 4s)
         if len(y) < self.target_len:
@@ -43,27 +41,12 @@ class UrbanSoundDataset(Dataset):
         waveform = self.pad_or_truncate_waveform(waveform)
 
         # Compute Mel spectrogram
-        #melspec = librosa.feature.melspectrogram(y=waveform, sr=self.sr, n_mels=self.n_mels)
-        #melspec_db = librosa.power_to_db(melspec, ref=np.max)
-        #melspec_db = np.expand_dims(melspec_db, axis=0)  # (1, n_mels, time)
-
-        # Compute log-mel spectrogram
         melspec = librosa.feature.melspectrogram(y=waveform, sr=self.sr, n_mels=self.n_mels)
-        melspec_db = librosa.power_to_db(melspec, ref=np.max)  # shape: (n_mels, time)
-        
-        # Convert to (time, n_mels) if needed
-        if melspec_db.shape[0] == self.n_mels:
-            melspec_db = melspec_db.T  # shape becomes (time, n_mels)
-        
+        melspec_db = librosa.power_to_db(melspec, ref=np.max)
+        melspec_db = np.expand_dims(melspec_db, axis=0)  # (1, n_mels, time)
+      
         if self.transform:
             melspec_db = self.transform(melspec_db)
-
-        #melspec_db = melspec_db.transpose(0, 1)  # (time, n_mels)
-
-        # Apply normalization
-        if self.mean is not None and self.std is not None:
-            #melspec_db = (melspec_db - self.mean) / self.std
-            melspec_db = (melspec_db - self.mean.numpy()) / self.std.numpy()
 
         return torch.tensor(melspec_db, dtype=torch.float32), label
 
